@@ -4,7 +4,7 @@ set -eu
 cd /var/www/html
 
 mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache || true
-chown -R www-data:www-data storage bootstrap/cache || true
+chown -R application:application storage bootstrap/cache || true
 chmod -R ug+rwx storage bootstrap/cache || true
 
 
@@ -16,5 +16,3 @@ if [ -f artisan ] && [ -f vendor/autoload.php ]; then
 	php artisan storage:link --force || true
 	php artisan optimize|| true
 fi
-
-exec "$@"
