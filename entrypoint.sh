@@ -13,6 +13,7 @@ if [ -f artisan ] && [ -f vendor/autoload.php ]; then
 		php artisan key:generate || true
 	fi
 
+	php artisan storage:link --force || true
 	php artisan optimize|| true
 fi
 
