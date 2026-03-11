@@ -7,10 +7,9 @@ services:
     container_name: production-laravel-app
     expose:
       - "9000"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
-      - laravel-storage:/var/www/html/storage
+      - /var/www/application/storage:/var/www/html/storage
+      - /var/www/application/.env:/var/www/html/.env
     networks:
       - db-network
     restart: unless-stopped
@@ -27,9 +26,6 @@ services:
     networks:
       - db-network
     restart: unless-stopped
-
-volumes:
-  laravel-storage:
 
 networks:
   db-network:
