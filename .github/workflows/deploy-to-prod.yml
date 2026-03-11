@@ -52,7 +52,7 @@ jobs:
         uses: cssnr/stack-deploy-action@v1
         with:
           name: "sample-application"
-          file: "docker/production/docker-compose.yml"
+          file: "deployment/production/docker-compose.yml"
           registry_host: "ghcr.io"
           registry_user: ${{ secrets.GHCR_USER }}
           registry_pass: ${{ secrets.GHCR_PASS }}
