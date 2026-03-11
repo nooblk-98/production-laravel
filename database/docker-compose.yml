@@ -4,14 +4,14 @@ services:
     container_name: mariadb
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: db@root6432+
-      MYSQL_DATABASE: appdb
-      MYSQL_USER: appuser
-      MYSQL_PASSWORD: db@app4321+
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-db@root6432+}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-appdb}
+      MYSQL_USER: ${MYSQL_USER:-appuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-db@app4321+}
     volumes:
       - /var/www/database:/var/lib/mysql
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     networks:
       - db-network
 
@@ -35,3 +35,4 @@ volumes:
 networks:
   db-network:
     external: true
+    name: db-network
