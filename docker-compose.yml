@@ -12,9 +12,6 @@ services:
       - /var/www/application/.env:/var/www/html/.env
     restart: unless-stopped
 
-volumes:
-  laravel-storage:
-
 networks:
   db-network:
     external: true
