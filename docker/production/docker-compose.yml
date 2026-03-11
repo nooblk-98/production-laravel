@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/nooblk-98/production-laravel:production
+    image: ghcr.io/sample/sample:production
     container_name: production-laravel-app
     expose:
       - "80"
