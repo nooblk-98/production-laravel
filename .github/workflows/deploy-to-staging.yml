@@ -1,9 +1,9 @@
-name: Deploy to production server
+name: Deploy to staging server
 
 on:
   push:
     branches:
-      - main
+      - staging
   workflow_dispatch:
 
 permissions:
@@ -31,13 +31,13 @@ jobs:
           PROJECT_NAME=$(basename ${{ github.repository }})
           docker build \
             -f ./Dockerfile \
-            -t ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:production \
+            -t ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:staging \
             -t ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:${{ github.sha }} .
 
       - name: Push Docker image
         run: |
           PROJECT_NAME=$(basename ${{ github.repository }})
-          docker push ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:production
+          docker push ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:staging
           docker push ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:${{ github.sha }}
 
   deploy:
@@ -52,7 +52,7 @@ jobs:
         uses: cssnr/stack-deploy-action@v1
         with:
           name: "sample-application"
-          file: "docker/production/docker-compose.yml"
+          file: "docker/staging/docker-compose.yml"
           registry_host: "ghcr.io"
           registry_user: ${{ secrets.GHCR_USER }}
           registry_pass: ${{ secrets.GHCR_PASS }}
