@@ -9,7 +9,7 @@ services:
       MYSQL_USER: appuser
       MYSQL_PASSWORD: db@app4321+
     volumes:
-      - mariadb_data:/var/lib/mysql
+      - /var/www/application/db:/var/lib/mysql
     ports:
       - "3306:3306"
     networks:
