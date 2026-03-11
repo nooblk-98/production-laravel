@@ -6,10 +6,15 @@ services:
     image: production-laravel:latest
     container_name: production-laravel
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "8080:80"
     volumes:
-      - laravel-storage:/var/www/html/storage
+      - /var/www/application/storage:/var/www/html/storage
+      - /var/www/application/.env:/var/www/html/.env
     restart: unless-stopped
 
 volumes:
   laravel-storage:
+
+networks:
+  db-network:
+    external: true
