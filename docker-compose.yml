@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: production-laravel-app
+    ports:
+      - "80:80"
+    volumes:
+      - /var/www/html:/var/www/html
+    networks:
+      - db-network
+    restart: unless-stopped
+
+
+networks:
+  db-network:
+    external: true
+    name: db-network
