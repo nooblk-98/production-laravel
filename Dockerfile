@@ -1,4 +1,4 @@
-FROM php:7.2-apache
+FROM lahiru98s/php-nginx-docker-template:7.4
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
     COMPOSER_ALLOW_SUPERUSER=1
