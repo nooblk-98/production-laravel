@@ -1,0 +1,20 @@
+services:
+  app:
+    image: ghcr.io/sample/sample:staging
+    container_name: sample
+    expose:
+      - "80"
+    volumes:
+      - /opt/www/sample/cms/conf/storage:/var/www/html/storage
+      - /opt/www/sample/cms/conf/.env:/var/www/html/.env
+    networks:
+      - proxy
+      - nginx
+    restart: unless-stopped
+
+
+networks:
+  proxy:
+    external: true
+  nginx:
+    external: true
