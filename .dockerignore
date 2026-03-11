@@ -1,0 +1,10 @@
+.git
+.gitignore
+README.md
+docker/staging
+application/node_modules
+application/vendor
+application/storage/logs
+application/storage/framework/cache/*
+application/storage/framework/sessions/*
+application/storage/framework/views/*
