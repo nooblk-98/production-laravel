@@ -7,17 +7,6 @@ mkdir -p storage/framework/cache storage/framework/sessions storage/framework/vi
 chown -R www-data:www-data storage bootstrap/cache || true
 chmod -R ug+rwx storage bootstrap/cache || true
 
-if [ ! -f .env ] && [ -f .env.example ]; then
-	cp .env.example .env
-fi
-
-if [ -f .env ]; then
-	sed -i "s/^DB_HOST=.*/DB_HOST=${DB_HOST:-mariadb}/" .env || true
-	sed -i "s/^DB_PORT=.*/DB_PORT=${DB_PORT:-3306}/" .env || true
-	sed -i "s/^DB_DATABASE=.*/DB_DATABASE=${DB_DATABASE:-appdb}/" .env || true
-	sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${DB_USERNAME:-appuser}/" .env || true
-	sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD:-db@app4321+}/" .env || true
-fi
 
 if [ -f artisan ] && [ -f vendor/autoload.php ]; then
 	if ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
