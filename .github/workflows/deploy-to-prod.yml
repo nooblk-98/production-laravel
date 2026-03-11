@@ -1,0 +1,82 @@
+name: Deploy to main
+
+on:
+  workflow_dispatch:
+
+env:
+  build_env: production
+  project_name: production-laravel
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  pull-requests: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          PROJECT_NAME=$(basename ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          docker build \
+            -f ./Dockerfile \
+            -t ghcr.io/${OWNER_NAME}/${PROJECT_NAME}:${{ env.build_env }} \
+            -t ghcr.io/${OWNER_NAME}/${PROJECT_NAME}:${{ github.sha }} .
+
+      - name: Push Docker image
+        run: |
+          PROJECT_NAME=$(basename ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          docker push ghcr.io/${OWNER_NAME}/${PROJECT_NAME}:${{ env.build_env }}
+          docker push ghcr.io/${OWNER_NAME}/${PROJECT_NAME}:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    name: deploy
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: "Compose Deploy"
+        uses: cssnr/stack-deploy-action@v1
+        with:
+          name: "production-laravel"
+          file: "docker-compose.yml"
+          registry_host: "ghcr.io"
+          registry_user: ${{ secrets.GHCR_USER }}
+          registry_pass: ${{ secrets.GHCR_PASS }}
+          host: ${{ secrets.DOCKER_HOST }}
+          port: ${{ secrets.DOCKER_PORT }}
+          user: ${{ secrets.DOCKER_USER }}
+          ssh_key: ${{ secrets.DOCKER_SSH_KEY }}
+          prune: true
+          mode: compose
+          args: --remove-orphans --force-recreate --pull always
+
+  clean:
+    runs-on: ubuntu-latest
+    needs: deploy
+    name: clean
+    steps:
+      - uses: snok/container-retention-policy@v3.0.0
+        with:
+          account: ${{ github.repository_owner }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          image-names: ${{ env.project_name }}
+          cut-off: 7d
+          keep-n-most-recent: 5
+          dry-run: false
