@@ -55,7 +55,7 @@ jobs:
         uses: cssnr/stack-deploy-action@v1
         with:
           name: "production-laravel"
-          file: "docker-compose.yml"
+          file: "docker/production/docker-compose.yml"
           registry_host: "ghcr.io"
           registry_user: ${{ secrets.GHCR_USER }}
           registry_pass: ${{ secrets.GHCR_PASS }}
