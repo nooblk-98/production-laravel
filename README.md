@@ -9,7 +9,7 @@ Production-ready Docker setup for Laravel using PHP-Nginx
 
 </div>
 
-Production-ready Docker setup for Laravel using PHP-Nginx, with:
+
 
 - Local development run
 - MariaDB + phpMyAdmin stack
