@@ -1,3 +1,8 @@
+
+
+<div align="center">
+  <img src="./images/logo.png" width="360" alt="WordPress Docker Stack logo" />
+
 # Production Laravel Docker Stack
 
 Production-ready Docker setup for Laravel using PHP-Nginx, with:
@@ -6,6 +11,9 @@ Production-ready Docker setup for Laravel using PHP-Nginx, with:
 - MariaDB + phpMyAdmin stack
 - Prebuilt-image deployment for staging/production
 - GitHub Actions build/push workflow
+
+</div>
+
 
 ## 1) File Roles (What each file is for)
 
