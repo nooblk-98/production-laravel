@@ -25,7 +25,8 @@ COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
 COPY application/ /var/www/html/
 
-RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts \
+RUN composer config --global audit.block-insecure false \
+    && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts \
     && test -f vendor/autoload.php \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R application:application storage bootstrap/cache || true \
