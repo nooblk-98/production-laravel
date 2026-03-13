@@ -56,7 +56,7 @@ jobs:
         uses: cssnr/stack-deploy-action@v1
         with:
           name: "${{ env.project_name }}"
-          file: "docker/${{ env.build_env }}/docker-compose.yml"
+          file: "deployment/${{ env.build_env }}/docker-compose.yml"
           registry_host: "ghcr.io"
           registry_user: ${{ secrets.GHCR_USERNAME }}
           registry_pass: ${{ secrets.GHCR_PAT }}
