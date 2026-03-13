@@ -1,196 +1,168 @@
 # Production Laravel Docker Stack
 
-Docker-based Laravel runtime using `webdevops/php-nginx:8.2`, with separate compose files for app runtime, database, staging, and production deployments.
+Production-ready Docker setup for Laravel using PHP-Nginx, with:
 
-## What this repository contains
+- Local development run
+- MariaDB + phpMyAdmin stack
+- Prebuilt-image deployment for staging/production
+- GitHub Actions build/push workflow
 
-- `Dockerfile` for PHP 8.2 + Nginx app container
-- `docker-compose.yml` for local app container
-- `entrypoint.sh` to prepare Laravel storage/cache and warm common caches
-- `database/docker-compose.yml` for MariaDB + phpMyAdmin
-- `deployment/staging/docker-compose.yml` and `deployment/production/docker-compose.yml` examples
+## 1) File Roles (What each file is for)
 
-## Which file is used for what
+- `Dockerfile` → Builds the Laravel app image (used locally and in CI)
+- `docker-compose.yml` → Local app run on your machine
+- `database/docker-compose.yml` → MariaDB + phpMyAdmin services
+- `deployment/production/docker-compose.yml` → Live deployment using prebuilt image
+- `deployment/staging/docker-compose.yml` → Staging deployment using prebuilt image
+- `.github/workflows/deploy-to-prod.yml` → Build/push production image (deploy block optional)
 
-- `Dockerfile`: used to build image for local run and CI image build
-- `docker-compose.yml`: local development run on your machine
-- `deployment/production/docker-compose.yml`: live deployment using prebuilt image from GHCR
-- `.github/workflows/deploy-to-prod.yml`: GitHub Actions workflow to prebuild image, push to GHCR, and (optionally) deploy
+## 2) Prerequisites
 
-## Prerequisites
-
-- Docker Desktop (or Docker Engine) with Compose v2
+- Docker Engine / Docker Desktop with Compose v2
 - Git
-- A Laravel project (this repo already includes one in `application/`)
+- Laravel app source code
 
-## Quick start (current sample app)
+## 3) Local Run (Quick Start)
 
-1. From repository root, create the root `.env` file if it does not exist.
-	- This file is mounted into the container as `/var/www/html/.env`.
-2. Build and run the app:
+1. Put your runtime env file at repository root as `.env`.
+   - It is mounted to `/var/www/html/.env` in the container.
+2. Start app:
 
 ```bash
 docker compose up --build -d
 ```
 
-3. Open:
-	- App: `http://localhost`
+3. Open app:
+   - `http://localhost`
 
-4. View logs:
+4. See logs:
 
 ```bash
 docker compose logs -f app
 ```
 
-5. Stop containers:
+5. Stop:
 
 ```bash
 docker compose down
 ```
 
-## Use this stack with your own Laravel application
+## 4) Use With Your Own Laravel App
 
-This stack expects your Laravel source code inside the `application/` directory.
+This stack expects source code inside `application/`.
 
-### Option A (recommended): replace `application/` with your app
+### Option A (Recommended)
 
-1. Remove or rename the existing `application/` folder.
-2. Copy your Laravel project into `application/`.
-3. Ensure your app has `public/index.php`.
-4. Put your runtime environment file at repository root as `.env` (not inside `application/`).
-5. Rebuild and run:
+Replace current `application/` with your Laravel project.
+
+Checklist:
+
+- Your project has `public/index.php`
+- Root `.env` exists in this repository
+
+Then rebuild:
 
 ```bash
 docker compose up --build -d
 ```
 
-### Option B: keep your app elsewhere
+### Option B (Different source folder)
 
-If you keep your code in another folder name, update the Dockerfile line:
+If your app folder is not `application/`, edit this in `Dockerfile`:
 
 ```dockerfile
 COPY application/ /var/www/html/
 ```
 
-to match your folder, then rebuild:
+Change it to your folder path, then rebuild.
+
+## 5) Database Stack (MariaDB + phpMyAdmin)
+
+Create external network once:
 
 ```bash
-docker compose up --build -d
+docker network create db-network
 ```
 
-## Production deployment with prebuilt image
+Start DB services:
 
-For live deployment, use `deployment/production/docker-compose.yml`.
+```bash
+docker compose -f database/docker-compose.yml up -d
+```
 
-- It does not build from source.
-- It pulls a prebuilt image (`ghcr.io/...:production`).
-- It mounts host `storage` and host `.env` into the container.
+Open phpMyAdmin:
+
+- `http://localhost:8090`
+
+## 6) Production Deployment (Prebuilt Image)
+
+Use `deployment/production/docker-compose.yml` for live deployment.
+
+It is designed to:
+
+- Pull prebuilt image from GHCR (`ghcr.io/...:production`)
+- Mount host `storage` and host `.env`
+- Run container without rebuilding on server
 
 Typical production flow:
 
-1. GitHub Action builds image from `Dockerfile`
-2. Action pushes image to GHCR
-3. Server deploy uses `deployment/production/docker-compose.yml` to pull and run that image
+1. Build image from `Dockerfile`
+2. Push image to GHCR
+3. Deploy server stack using `deployment/production/docker-compose.yml`
 
-## GitHub Actions: build, push, deploy
+## 7) GitHub Actions Flow
 
-Workflow file: `.github/workflows/deploy-to-prod.yml`
+Workflow: `.github/workflows/deploy-to-prod.yml`
 
-Current behavior in this repository:
+Current behavior:
 
 - Trigger: push to `main` or manual run
-- Build job: builds image from `Dockerfile`
-- Push job step: pushes tags
-	- `ghcr.io/<owner>/<project>:production`
-	- `ghcr.io/<owner>/<project>:<commit-sha>`
+- Builds image from `Dockerfile`
+- Pushes tags:
+  - `ghcr.io/<owner>/<project>:production`
+  - `ghcr.io/<owner>/<project>:<commit-sha>`
+- Creates automatic release tag
 - Deploy job block exists but is currently commented out
-- Release job creates an automatic GitHub release tag
 
-If you want fully automated live deployment, uncomment and configure the deploy job secrets in this workflow.
+If you want full auto-deploy, uncomment deploy job and configure required secrets.
 
-## Docker ENV variables in Dockerfile
+## 8) Docker ENV Variables (App Runtime)
 
-These are application runtime defaults. You should tune them based on your project size, traffic, upload limits, and memory usage.
+Current values in `Dockerfile`:
 
 ```dockerfile
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
-		WEB_DOCUMENT_ROOT=/var/www/html/public \
-		WEB_DOCUMENT_INDEX=index.php \
-		SERVICE_NGINX_CLIENT_MAX_BODY_SIZE=200M \
-		PHP_UPLOAD_MAX_FILESIZE=200M \
-		PHP_POST_MAX_SIZE=200M \
-		PHP_OPCACHE_MEMORY_CONSUMPTION=2048 \
-		PHP_MEMORY_LIMIT=2G
+    WEB_DOCUMENT_ROOT=/var/www/html/public \
+    WEB_DOCUMENT_INDEX=index.php \
+    SERVICE_NGINX_CLIENT_MAX_BODY_SIZE=200M \
+    PHP_UPLOAD_MAX_FILESIZE=200M \
+    PHP_POST_MAX_SIZE=200M \
+    PHP_OPCACHE_MEMORY_CONSUMPTION=2048 \
+    PHP_MEMORY_LIMIT=2G
 ```
 
-Variable meanings:
+What they mean:
 
-- `COMPOSER_ALLOW_SUPERUSER=1`
-	- Allows Composer to run as root during image build.
-	- Keep as `1` in container builds unless you switch to a non-root build user.
+- `COMPOSER_ALLOW_SUPERUSER=1` → Allows Composer as root during image build
+- `WEB_DOCUMENT_ROOT=/var/www/html/public` → Laravel public web root
+- `WEB_DOCUMENT_INDEX=index.php` → Default entry file
+- `SERVICE_NGINX_CLIENT_MAX_BODY_SIZE` → Nginx request body size limit
+- `PHP_UPLOAD_MAX_FILESIZE` → Max single upload size in PHP
+- `PHP_POST_MAX_SIZE` → Max total POST body size
+- `PHP_OPCACHE_MEMORY_CONSUMPTION` → OPcache memory size (MB)
+- `PHP_MEMORY_LIMIT` → Per-request PHP memory limit
 
-- `WEB_DOCUMENT_ROOT=/var/www/html/public`
-	- Nginx document root.
-	- For Laravel, keep this as `public`.
-
-- `WEB_DOCUMENT_INDEX=index.php`
-	- Default index file served by Nginx.
-	- Usually keep `index.php` for Laravel.
-
-- `SERVICE_NGINX_CLIENT_MAX_BODY_SIZE=200M`
-	- Max request body accepted by Nginx.
-	- Increase for large uploads/imports; decrease for stricter limits.
-
-- `PHP_UPLOAD_MAX_FILESIZE=200M`
-	- Max size of a single uploaded file in PHP.
-
-- `PHP_POST_MAX_SIZE=200M`
-	- Max total POST payload size.
-	- Set greater than or equal to upload max size.
-
-- `PHP_OPCACHE_MEMORY_CONSUMPTION=2048`
-	- OPcache memory (MB) for compiled PHP scripts.
-	- Reduce for small apps or low-memory VPS; increase if OPcache gets full.
-
-- `PHP_MEMORY_LIMIT=2G`
-	- Max PHP memory per request.
-	- Tune down for smaller servers (example: `256M` or `512M`) unless heavy jobs require more.
-
-Suggested tuning starting points:
-
-- Small CRUD app:
-	- `SERVICE_NGINX_CLIENT_MAX_BODY_SIZE=20M`
-	- `PHP_UPLOAD_MAX_FILESIZE=20M`
-	- `PHP_POST_MAX_SIZE=24M`
-	- `PHP_OPCACHE_MEMORY_CONSUMPTION=256`
-	- `PHP_MEMORY_LIMIT=256M`
-
-- Medium app with exports/uploads:
-	- `SERVICE_NGINX_CLIENT_MAX_BODY_SIZE=64M`
-	- `PHP_UPLOAD_MAX_FILESIZE=64M`
-	- `PHP_POST_MAX_SIZE=72M`
-	- `PHP_OPCACHE_MEMORY_CONSUMPTION=512`
-	- `PHP_MEMORY_LIMIT=512M`
-
-- High-load / heavy processing:
-	- `SERVICE_NGINX_CLIENT_MAX_BODY_SIZE=200M`
-	- `PHP_UPLOAD_MAX_FILESIZE=200M`
-	- `PHP_POST_MAX_SIZE=200M`
-	- `PHP_OPCACHE_MEMORY_CONSUMPTION=1024` to `2048`
-	- `PHP_MEMORY_LIMIT=1G` to `2G`
-
-After changing ENV values, rebuild image:
+After changing these values, rebuild image:
 
 ```bash
 docker compose up --build -d
 ```
 
-## Enable PM2 inside container (optional)
+## 9) Optional: PM2 for Laravel Worker Jobs
 
-In [Dockerfile](Dockerfile), this block is commented by default:
+In `Dockerfile`, uncomment this block to install PM2:
 
 ```dockerfile
-# uncomment to enable pm2 tool inside container
 # RUN apt-get update \
 #     && apt-get install -y --no-install-recommends nodejs npm \
 #     && npm install -g pm2 \
@@ -198,28 +170,20 @@ In [Dockerfile](Dockerfile), this block is commented by default:
 #     && rm -rf /var/lib/apt/lists/*
 ```
 
-To use PM2, uncomment those lines and rebuild image:
+Rebuild:
 
 ```bash
 docker compose up --build -d
 ```
 
-What this does:
-
-- Installs Node.js + npm in the PHP container
-- Installs PM2 globally
-- Lets you run long-living background processes managed by PM2 (auto-restart)
-
-### Run Laravel queue worker with PM2
-
-Example command inside container:
+Run queue worker with PM2:
 
 ```bash
 pm2 start "php artisan queue:work --sleep=3 --tries=3 --timeout=120" --name laravel-queue
 pm2 save
 ```
 
-Useful PM2 commands:
+Useful commands:
 
 ```bash
 pm2 list
@@ -228,143 +192,65 @@ pm2 restart laravel-queue
 pm2 delete laravel-queue
 ```
 
-### Auto-start PM2 jobs on container boot
+`entrypoint.sh` already contains a commented hook for auto-start script (`pm2_cronjobs/start-pm2-jobs.sh`) if you want PM2 jobs started on container boot.
 
-Your [entrypoint.sh](entrypoint.sh) already contains a commented hook:
+## 10) Change PHP or MariaDB Version
 
-```sh
-# if [ -f /var/www/html/pm2_cronjobs/start-pm2-jobs.sh ]; then
-#   sh /var/www/html/pm2_cronjobs/start-pm2-jobs.sh || true
-# fi
-```
+### Change PHP image tag
 
-To enable boot-time PM2 jobs:
-
-1. Uncomment that block in [entrypoint.sh](entrypoint.sh)
-2. Create script: `application/pm2_cronjobs/start-pm2-jobs.sh`
-3. Start your PM2 processes in that script (queue workers, schedulers, etc.)
-
-Example `start-pm2-jobs.sh`:
-
-```sh
-#!/bin/sh
-set -eu
-cd /var/www/html
-
-pm2 delete laravel-queue || true
-pm2 start "php artisan queue:work --sleep=3 --tries=3 --timeout=120" --name laravel-queue
-pm2 save
-```
-
-Important notes:
-
-- For one-process-per-container production architecture, queue workers are usually run in a separate worker container.
-- If you run workers in this same container, monitor CPU/RAM and ensure process count matches server capacity.
-
-## Database stack (MariaDB + phpMyAdmin)
-
-1. Create external network once:
-
-```bash
-docker network create db-network
-```
-
-2. Start database services:
-
-```bash
-docker compose -f database/docker-compose.yml up -d
-```
-
-3. Open:
-	- phpMyAdmin: `http://localhost:8090`
-
-4. Default database env values are in `database/docker-compose.yml` and can be overridden with environment variables.
-
-## Common commands
-
-Run Laravel Artisan in the container:
-
-```bash
-docker compose exec app php artisan
-```
-
-Run migrations:
-
-```bash
-docker compose exec app php artisan migrate
-```
-
-Install/update PHP dependencies inside container:
-
-```bash
-docker compose exec app composer install
-```
-
-## Change PHP and MariaDB versions
-
-### Change PHP version (app container)
-
-Edit [Dockerfile](Dockerfile) first line:
+Edit `Dockerfile`:
 
 ```dockerfile
 FROM webdevops/php-nginx:8.2
 ```
 
-Examples:
+Examples: `8.1`, `8.3`
 
-- `FROM webdevops/php-nginx:8.3`
-- `FROM webdevops/php-nginx:8.1`
-
-Then rebuild local image:
+Then rebuild:
 
 ```bash
 docker compose up --build -d
 ```
 
-For production with prebuilt image:
+### Change MariaDB image tag
 
-1. Commit and push to `main`
-2. [.github/workflows/deploy-to-prod.yml](.github/workflows/deploy-to-prod.yml) builds/pushes the new image tag
-3. Server pulls updated image using [deployment/production/docker-compose.yml](deployment/production/docker-compose.yml)
-
-### Change MariaDB version (database stack)
-
-Edit [database/docker-compose.yml](database/docker-compose.yml):
+Edit `database/docker-compose.yml`:
 
 ```yaml
-services:
-	mariadb:
-		image: mariadb:10
+image: mariadb:10
 ```
 
-Examples:
+Examples: `10.11`, `11.4`
 
-- `image: mariadb:10.11`
-- `image: mariadb:11.4`
-
-Apply new database image:
+Apply:
 
 ```bash
 docker compose -f database/docker-compose.yml pull
 docker compose -f database/docker-compose.yml up -d
 ```
 
-### Important compatibility checks
+## 11) Common Commands
 
-- Check Laravel and PHP package compatibility before changing PHP major/minor version.
-- Check your SQL features/collation support before changing MariaDB major version.
-- Always back up database before MariaDB major upgrade.
-- For production, test version change in staging first.
+Artisan:
 
-## Notes
+```bash
+docker compose exec app php artisan
+```
 
-- Container startup runs cache clear/cache commands and ensures storage permissions.
-- PHP/Nginx limits (upload size, memory, etc.) are configured in `Dockerfile` via environment variables.
-- This image uses PHP 8.2, so older Laravel versions may need compatibility updates.
+Migrate:
 
-## Deployment compose examples
+```bash
+docker compose exec app php artisan migrate
+```
 
-- `deployment/staging/docker-compose.yml`
-- `deployment/production/docker-compose.yml`
+Install composer packages:
 
-These are templates for running prebuilt images (`ghcr.io/...`) with mounted `storage` and `.env` from host paths.
+```bash
+docker compose exec app composer install
+```
+
+## 12) Notes
+
+- Container startup prepares storage/cache permissions and runs cache warmup commands.
+- This image uses PHP 8.x; verify framework/package compatibility before version upgrades.
+- For production scale, queue workers are often better in a separate worker container.
