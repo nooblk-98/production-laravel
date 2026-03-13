@@ -5,15 +5,16 @@
 
 # Production Laravel Docker Stack
 
+Production-ready Docker setup for Laravel using PHP-Nginx
+
+</div>
+
 Production-ready Docker setup for Laravel using PHP-Nginx, with:
 
 - Local development run
 - MariaDB + phpMyAdmin stack
 - Prebuilt-image deployment for staging/production
 - GitHub Actions build/push workflow
-
-</div>
-
 
 ## 1) File Roles (What each file is for)
 
