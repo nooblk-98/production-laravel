@@ -300,6 +300,62 @@ Install/update PHP dependencies inside container:
 docker compose exec app composer install
 ```
 
+## Change PHP and MariaDB versions
+
+### Change PHP version (app container)
+
+Edit [Dockerfile](Dockerfile) first line:
+
+```dockerfile
+FROM webdevops/php-nginx:8.2
+```
+
+Examples:
+
+- `FROM webdevops/php-nginx:8.3`
+- `FROM webdevops/php-nginx:8.1`
+
+Then rebuild local image:
+
+```bash
+docker compose up --build -d
+```
+
+For production with prebuilt image:
+
+1. Commit and push to `main`
+2. [.github/workflows/deploy-to-prod.yml](.github/workflows/deploy-to-prod.yml) builds/pushes the new image tag
+3. Server pulls updated image using [deployment/production/docker-compose.yml](deployment/production/docker-compose.yml)
+
+### Change MariaDB version (database stack)
+
+Edit [database/docker-compose.yml](database/docker-compose.yml):
+
+```yaml
+services:
+	mariadb:
+		image: mariadb:10
+```
+
+Examples:
+
+- `image: mariadb:10.11`
+- `image: mariadb:11.4`
+
+Apply new database image:
+
+```bash
+docker compose -f database/docker-compose.yml pull
+docker compose -f database/docker-compose.yml up -d
+```
+
+### Important compatibility checks
+
+- Check Laravel and PHP package compatibility before changing PHP major/minor version.
+- Check your SQL features/collation support before changing MariaDB major version.
+- Always back up database before MariaDB major upgrade.
+- For production, test version change in staging first.
+
 ## Notes
 
 - Container startup runs cache clear/cache commands and ensures storage permissions.
