@@ -185,6 +185,82 @@ After changing ENV values, rebuild image:
 docker compose up --build -d
 ```
 
+## Enable PM2 inside container (optional)
+
+In [Dockerfile](Dockerfile), this block is commented by default:
+
+```dockerfile
+# uncomment to enable pm2 tool inside container
+# RUN apt-get update \
+#     && apt-get install -y --no-install-recommends nodejs npm \
+#     && npm install -g pm2 \
+#     && apt-get clean \
+#     && rm -rf /var/lib/apt/lists/*
+```
+
+To use PM2, uncomment those lines and rebuild image:
+
+```bash
+docker compose up --build -d
+```
+
+What this does:
+
+- Installs Node.js + npm in the PHP container
+- Installs PM2 globally
+- Lets you run long-living background processes managed by PM2 (auto-restart)
+
+### Run Laravel queue worker with PM2
+
+Example command inside container:
+
+```bash
+pm2 start "php artisan queue:work --sleep=3 --tries=3 --timeout=120" --name laravel-queue
+pm2 save
+```
+
+Useful PM2 commands:
+
+```bash
+pm2 list
+pm2 logs laravel-queue
+pm2 restart laravel-queue
+pm2 delete laravel-queue
+```
+
+### Auto-start PM2 jobs on container boot
+
+Your [entrypoint.sh](entrypoint.sh) already contains a commented hook:
+
+```sh
+# if [ -f /var/www/html/pm2_cronjobs/start-pm2-jobs.sh ]; then
+#   sh /var/www/html/pm2_cronjobs/start-pm2-jobs.sh || true
+# fi
+```
+
+To enable boot-time PM2 jobs:
+
+1. Uncomment that block in [entrypoint.sh](entrypoint.sh)
+2. Create script: `application/pm2_cronjobs/start-pm2-jobs.sh`
+3. Start your PM2 processes in that script (queue workers, schedulers, etc.)
+
+Example `start-pm2-jobs.sh`:
+
+```sh
+#!/bin/sh
+set -eu
+cd /var/www/html
+
+pm2 delete laravel-queue || true
+pm2 start "php artisan queue:work --sleep=3 --tries=3 --timeout=120" --name laravel-queue
+pm2 save
+```
+
+Important notes:
+
+- For one-process-per-container production architecture, queue workers are usually run in a separate worker container.
+- If you run workers in this same container, monitor CPU/RAM and ensure process count matches server capacity.
+
 ## Database stack (MariaDB + phpMyAdmin)
 
 1. Create external network once:
