@@ -1,10 +1,14 @@
 name: Deploy to production server
 
-on:
-  # push:
-  #   branches:
-  #     - main
+# on:
+#   push:
+#     branches:
+#       - main
   workflow_dispatch:
+
+env:
+  build_env: production
+  project_name: production-laravel
 
 permissions:
   contents: write
@@ -31,13 +35,13 @@ jobs:
           PROJECT_NAME=$(basename ${{ github.repository }})
           docker build \
             -f ./Dockerfile \
-            -t ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:production \
+            -t ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:${{ env.build_env }} \
             -t ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:${{ github.sha }} .
 
       - name: Push Docker image
         run: |
           PROJECT_NAME=$(basename ${{ github.repository }})
-          docker push ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:production
+          docker push ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:${{ env.build_env }}
           docker push ghcr.io/${{ github.repository_owner }}/${PROJECT_NAME}:${{ github.sha }}
 
   deploy:
@@ -51,40 +55,26 @@ jobs:
       - name: "Compose Deploy"
         uses: cssnr/stack-deploy-action@v1
         with:
-          name: "sample-application"
-          file: "deployment/production/docker-compose.yml"
+          name: "${{ env.project_name }}"
+          file: "docker/${{ env.build_env }}/docker-compose.yml"
           registry_host: "ghcr.io"
-          registry_user: ${{ secrets.GHCR_USER }}
-          registry_pass: ${{ secrets.GHCR_PASS }}
-          host: ${{ secrets.DOCKER_HOST }}
-          port: ${{ secrets.DOCKER_PORT }}
-          user: ${{ secrets.DOCKER_USER }}
-          ssh_key: ${{ secrets.DOCKER_SSH_KEY }}
+          registry_user: ${{ secrets.GHCR_USERNAME }}
+          registry_pass: ${{ secrets.GHCR_PAT }}
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          user: ${{ secrets.VPS_USER }}
+          ssh_key: ${{ secrets.VPS_SSH_KEY }}
           prune: true
           mode: compose
           args: --remove-orphans --force-recreate --pull always
 
-  # create-release:
-  #   runs-on: ubuntu-latest
-  #   needs: deploy
-  #   steps:
-  #     - uses: marvinpinto/action-automatic-releases@latest
-  #       with:
-  #         repo_token: "${{ secrets.GITHUB_TOKEN }}"
-  #         prerelease: false
-  #         automatic_release_tag: "v1.0.${{ github.run_number }}"
-  #         title: "Release for commit ${{ github.sha }}"
-
-#   clean:
-#     runs-on: ubuntu-latest
-#     needs: create-release
-#     name: clean
-#     steps:
-#       - uses: snok/container-retention-policy@v3.0.0
-#         with:
-#           account: weblankan-lk
-#           token: ${{ secrets.GITHUB_TOKEN }}
-#           image-names: ${{ env.project_name }}
-#           cut-off: 7d
-#           keep-n-most-recent: 5
-#           dry-run: false
+  create-release:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          automatic_release_tag: "v1.0.${{ github.run_number }}"
+          title: "Release for commit ${{ github.sha }}"
