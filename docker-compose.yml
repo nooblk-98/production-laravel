@@ -4,16 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: production-laravel-app
+    volumes:
+      - .env:/var/www/html/.env
     ports:
       - "80:80"
-    volumes:
-      - /var/www/html:/var/www/html
-    networks:
-      - db-network
-    restart: unless-stopped
-
-
-networks:
-  db-network:
-    external: true
-    name: db-network
